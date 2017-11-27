@@ -63,15 +63,6 @@
 	#define XBYAK_STD_UNORDERED_MAP std::map
 	#define XBYAK_STD_UNORDERED_MULTIMAP std::multimap
 #endif
-#ifdef _WIN32
-	#include <winsock2.h>
-	#include <windows.h>
-	#include <malloc.h>
-#elif defined(__GNUC__)
-	#include <unistd.h>
-	#include <sys/mman.h>
-	#include <stdlib.h>
-#endif
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
 	#include <stdint.h>
 #endif
@@ -319,31 +310,8 @@ class MmapAllocator : Allocator {
 	typedef XBYAK_STD_UNORDERED_MAP<uintptr_t, size_t> SizeList;
 	SizeList sizeList_;
 public:
-	uint8 *alloc(size_t size)
-	{
-		const size_t alignedSizeM1 = inner::ALIGN_PAGE_SIZE - 1;
-		size = (size + alignedSizeM1) & ~alignedSizeM1;
-#ifdef MAP_ANONYMOUS
-		const int mode = MAP_PRIVATE | MAP_ANONYMOUS;
-#elif defined(MAP_ANON)
-		const int mode = MAP_PRIVATE | MAP_ANON;
-#else
-		#error "not supported"
-#endif
-		void *p = mmap(NULL, size, PROT_READ | PROT_WRITE, mode, -1, 0);
-		if (p == MAP_FAILED) throw Error(ERR_CANT_ALLOC);
-		assert(p);
-		sizeList_[(uintptr_t)p] = size;
-		return (uint8*)p;
-	}
-	void free(uint8 *p)
-	{
-		if (p == 0) return;
-		SizeList::iterator i = sizeList_.find((uintptr_t)p);
-		if (i == sizeList_.end()) throw Error(ERR_BAD_PARAMETER);
-		if (munmap((void*)i->first, i->second) < 0) throw Error(ERR_MUNMAP);
-		sizeList_.erase(i);
-	}
+	uint8 *alloc(size_t size);
+	void free(uint8 *p);
 };
 #endif
 
@@ -956,21 +924,7 @@ public:
 		@param canExec [in] true(enable to exec), false(disable to exec)
 		@return true(success), false(failure)
 	*/
-	static inline bool protect(const void *addr, size_t size, bool canExec)
-	{
-#if defined(_WIN32)
-		DWORD oldProtect;
-		return VirtualProtect(const_cast<void*>(addr), size, canExec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE, &oldProtect) != 0;
-#elif defined(__GNUC__)
-		size_t pageSize = sysconf(_SC_PAGESIZE);
-		size_t iaddr = reinterpret_cast<size_t>(addr);
-		size_t roundAddr = iaddr & ~(pageSize - static_cast<size_t>(1));
-		int mode = PROT_READ | PROT_WRITE | (canExec ? PROT_EXEC : 0);
-		return mprotect(reinterpret_cast<void*>(roundAddr), size + (iaddr - roundAddr), mode) == 0;
-#else
-		return true;
-#endif
-	}
+	static bool protect(const void *addr, size_t size, bool canExec);
 	/**
 		get aligned memory pointer
 		@param addr [in] address
