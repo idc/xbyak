@@ -60,7 +60,7 @@ void putX_X_XM(bool omitOnly)
 			{ 0x02, "pblendd", T_0F3A | T_66 | T_W0 | T_YMM, true, true, 2 },
 			{ 0x0B, "roundsd", T_0F3A | T_66 | T_W0, true, true, 3 },
 			{ 0x0A, "roundss", T_0F3A | T_66 | T_W0, true, true, 3 },
-			{ 0x44, "pclmulqdq", T_0F3A | T_66 | T_W0, true, true, 3 },
+			{ 0x44, "pclmulqdq", T_0F3A | T_66 | T_W0 | T_YMM | T_EVEX, true, true, 3 },
 			{ 0x0C, "permilps", T_0F38 | T_66 | T_W0 | T_YMM | T_EVEX | T_EW0 | T_B32, false, false, 2 },
 			{ 0x0D, "permilpd", T_0F38 | T_66 | T_W0 | T_YMM | T_EVEX | T_EW1 | T_B64, false, false, 2 },
 
@@ -76,7 +76,7 @@ void putX_X_XM(bool omitOnly)
 			{ 0xC2, "cmpss", T_0F | T_F3, true, true, 2 },
 			{ 0x5A, "cvtsd2ss", T_0F | T_F2 | T_EVEX | T_EW1 | T_N8 | T_ER_X, false, true, 2 },
 			{ 0x5A, "cvtss2sd", T_0F | T_F3 | T_EVEX | T_EW0 | T_N4 | T_SAE_X, false, true, 2 },
-			{ 0x21, "insertps", T_0F3A | T_66 | T_W0 | T_EVEX | T_EW0, true, true, 2 },
+			{ 0x21, "insertps", T_0F3A | T_66 | T_W0 | T_EVEX | T_EW0 | T_N4, true, true, 2 },
 			{ 0x63, "packsswb", T_0F | T_66 | T_YMM | T_EVEX, false, true, 2 },
 			{ 0x6B, "packssdw", T_0F | T_66 | T_YMM | T_EVEX | T_EW0 | T_B32, false, true, 2 },
 			{ 0x67, "packuswb", T_0F | T_66 | T_YMM | T_EVEX, false, true, 2 },
@@ -202,6 +202,10 @@ void putX_X_XM(bool omitOnly)
 
 			{ 0x14, "unpcklpd", T_0F | T_66 | T_YMM | T_EVEX | T_EW1 | T_B64, false, true, 2 },
 			{ 0x14, "unpcklps", T_0F | T_YMM | T_EVEX | T_EW0 | T_B32, false, true, 2 },
+
+			{ 0xCF, "gf2p8affineinvqb", T_66 | T_0F3A | T_W1 | T_EVEX | T_YMM | T_EW1 | T_SAE_Z | T_B64, true, false, 3 },
+			{ 0xCE, "gf2p8affineqb", T_66 | T_0F3A | T_W1 | T_EVEX | T_YMM | T_EW1 | T_SAE_Z | T_B64, true, false, 3 },
+			{ 0xCF, "gf2p8mulb", T_66 | T_0F38 | T_W0 | T_EVEX | T_YMM | T_EW0 | T_SAE_Z, false, false, 3 },
 		};
 		for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
 			const Tbl *p = &tbl[i];
@@ -626,9 +630,18 @@ void put()
 			{ "cpuid", 0x0F, 0xA2 },
 			{ "cwd", 0x66, 0x99 },
 			{ "cwde", 0x98 },
+			{ "cmpsb", 0xA6 },
+			{ "cmpsw", 0x66, 0xA7 },
+			{ "cmpsd", 0xA7 },
+			{ "scasb", 0xAE },
+			{ "scasw", 0x66, 0xAF },
+			{ "scasd", 0xAF },
 			{ "movsb", 0xA4 },
 			{ "movsw", 0x66, 0xA5 },
 			{ "movsd", 0xA5 },
+			{ "stosb", 0xAA },
+			{ "stosw", 0x66, 0xAB },
+			{ "stosd", 0xAB },
 			{ "rep", 0xF3 },
 
 			{ "lahf", 0x9F },
@@ -1229,12 +1242,12 @@ void put()
 			const char *name;
 			int type;
 		} tbl[] = {
-			{ 0x29, "movapd", T_0F | T_66 | T_YMM | T_EVEX | T_EW1  },
-			{ 0x29, "movaps", T_0F | T_YMM | T_EVEX | T_EW0  },
+			{ 0x29, "movapd", T_0F | T_66 | T_YMM | T_EVEX | T_EW1 | T_M_K },
+			{ 0x29, "movaps", T_0F | T_YMM | T_EVEX | T_EW0 | T_M_K },
 			{ 0x7F, "movdqa", T_0F | T_66 | T_YMM  },
 			{ 0x7F, "movdqu", T_0F | T_F3 | T_YMM  },
-			{ 0x11, "movupd", T_0F | T_66 | T_YMM | T_EVEX | T_EW1  },
-			{ 0x11, "movups", T_0F | T_YMM | T_EVEX | T_EW0  },
+			{ 0x11, "movupd", T_0F | T_66 | T_YMM | T_EVEX | T_EW1 | T_M_K },
+			{ 0x11, "movups", T_0F | T_YMM | T_EVEX | T_EW0 | T_M_K },
 		};
 		for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
 			const Tbl *p = &tbl[i];
@@ -1258,10 +1271,10 @@ void put()
 			{ 0x7D, "hsubpd", T_0F | T_66 | T_YMM, 3 },
 			{ 0x7D, "hsubps", T_0F | T_F2 | T_YMM, 3 },
 
-			{ 0xDC, "aesenc", T_0F38 | T_66 | T_W0, 3 },
-			{ 0xDD, "aesenclast", T_0F38 | T_66 | T_W0, 3 },
-			{ 0xDE, "aesdec", T_0F38 | T_66 | T_W0, 3 },
-			{ 0xDF, "aesdeclast", T_0F38 | T_66 | T_W0, 3 },
+			{ 0xDC, "aesenc", T_0F38 | T_66 | T_YMM | T_EVEX, 3 },
+			{ 0xDD, "aesenclast", T_0F38 | T_66 | T_YMM | T_EVEX, 3 },
+			{ 0xDE, "aesdec", T_0F38 | T_66 | T_YMM | T_EVEX, 3 },
+			{ 0xDF, "aesdeclast", T_0F38 | T_66 | T_YMM | T_EVEX, 3 },
 		};
 		for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
 			const Tbl *p = &tbl[i];
@@ -1478,16 +1491,16 @@ void put()
 			int idx;
 			int type;
 		} tbl[] = {
-			{ "pslldq", 0x73, 7, T_0F | T_66 | T_YMM | T_EVEX  },
-			{ "psrldq", 0x73, 3, T_0F | T_66 | T_YMM | T_EVEX   },
-			{ "psllw", 0x71, 6, T_0F | T_66 | T_YMM | T_EVEX   },
-			{ "pslld", 0x72, 6, T_0F | T_66 | T_YMM | T_EVEX | T_EW0 | T_B32   },
-			{ "psllq", 0x73, 6, T_0F | T_66 | T_YMM | T_EVEX | T_EW1 | T_B64   },
-			{ "psraw", 0x71, 4, T_0F | T_66 | T_YMM | T_EVEX  },
-			{ "psrad", 0x72, 4, T_0F | T_66 | T_YMM | T_EVEX | T_EW0 | T_B32  },
-			{ "psrlw", 0x71, 2, T_0F | T_66 | T_YMM | T_EVEX  },
-			{ "psrld", 0x72, 2, T_0F | T_66 | T_YMM | T_EVEX | T_EW0 | T_B32  },
-			{ "psrlq", 0x73, 2, T_0F | T_66 | T_YMM | T_EVEX | T_EW1 | T_B64  },
+			{ "pslldq", 0x73, 7, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX },
+			{ "psrldq", 0x73, 3, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX },
+			{ "psllw", 0x71, 6, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX },
+			{ "pslld", 0x72, 6, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX | T_EW0 | T_B32 },
+			{ "psllq", 0x73, 6, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX | T_EW1 | T_B64 },
+			{ "psraw", 0x71, 4, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX },
+			{ "psrad", 0x72, 4, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX | T_EW0 | T_B32 },
+			{ "psrlw", 0x71, 2, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX },
+			{ "psrld", 0x72, 2, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX | T_EW0 | T_B32 },
+			{ "psrlq", 0x73, 2, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX | T_EW1 | T_B64 },
 		};
 		for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
 			const Tbl& p = tbl[i];
@@ -1639,7 +1652,7 @@ void put()
 		};
 		for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
 			const Tbl& p = tbl[i];
-			printf("void %s(const Xmm& x1, const Address& addr, const Xmm& x2) { opGather(x1, addr, x2, T_0F38 | T_66 | T_W%d, 0x%x, %d); }\n", p.name, p.w, p.code, p.mode);
+			printf("void %s(const Xmm& x1, const Address& addr, const Xmm& x2) { opGather(x1, addr, x2, T_0F38 | T_66 | T_YMM | T_VSIB | T_W%d, 0x%x, %d); }\n", p.name, p.w, p.code, p.mode);
 		}
 	}
 }
@@ -1674,7 +1687,10 @@ void put64()
 	const GenericTbl tbl[] = {
 		{ "cdqe", 0x48, 0x98 },
 		{ "cqo", 0x48, 0x99 },
+		{ "cmpsq", 0x48, 0xA7 },
 		{ "movsq", 0x48, 0xA5 },
+		{ "scasq", 0x48, 0xAF },
+		{ "stosq", 0x48, 0xAB },
 	};
 	putGeneric(tbl, NUM_OF_ARRAY(tbl));
 

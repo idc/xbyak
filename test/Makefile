@@ -1,11 +1,11 @@
-TARGET = make_nm normalize_prefix jmp address nm_frame bad_address misc
+TARGET = make_nm normalize_prefix jmp address bad_address misc cvt_test cvt_test32
 XBYAK_INC=../xbyak/xbyak.h
 BIT=32
 ifeq ($(shell uname -m),x86_64)
 BIT=64
 endif
 
-ifeq ($(MODE_BIT),64)
+ifeq ($(BIT),64)
 	TARGET += jmp64 address64
 endif
 
@@ -28,21 +28,26 @@ address: address.cpp ../xbyak/xbyak.h
 	$(CXX) $(CFLAGS) address.cpp -o $@ -m32
 address64: address.cpp ../xbyak/xbyak.h
 	$(CXX) $(CFLAGS) address.cpp -o $@ -m64
-nm_frame: nm_frame.cpp ../xbyak/xbyak.h
-	$(CXX) $(CFLAGS) nm_frame.cpp -o $@ -m32
 bad_address: bad_address.cpp ../xbyak/xbyak.h
 	$(CXX) $(CFLAGS) bad_address.cpp -o $@
 misc: misc.cpp ../xbyak/xbyak.h
 	$(CXX) $(CFLAGS) misc.cpp -o $@
+cvt_test: cvt_test.cpp ../xbyak/xbyak.h
+	$(CXX) $(CFLAGS) $< -o $@
+cvt_test32: cvt_test.cpp ../xbyak/xbyak.h
+	$(CXX) $(CFLAGS) $< -o $@ -DXBYAK32
 
-test: normalize_prefix jmp bad_address
+test: normalize_prefix jmp bad_address $(TARGET)
 	$(MAKE) -C ../gen
 	./test_nm.sh
 	./test_nm.sh Y
+	./test_nm.sh avx512
 	./test_address.sh
 	./jmp
 	./bad_address
 	./misc
+	./cvt_test
+	./cvt_test32
 ifeq ($(BIT),64)
 	./test_address.sh 64
 	./test_nm.sh 64
@@ -65,7 +70,7 @@ ifeq ($(BIT),64)
 	./test_avx512.sh 64
 endif
 clean:
-	rm -rf *.o $(TARGET) lib_run
+	rm -rf *.o $(TARGET) lib_run nm.cpp nm_frame make_512
 
 lib_run: lib_test.cpp lib_run.cpp lib.h
 	$(CXX) $(CFLAGS) lib_run.cpp lib_test.cpp -o lib_run

@@ -1,5 +1,5 @@
 
-    C++用x86(IA-32), x64(AMD64, x86-64) JITアセンブラ Xbyak 5.53
+    C++用x86(IA-32), x64(AMD64, x86-64) JITアセンブラ Xbyak 5.80
 
 -----------------------------------------------------------------------------
 ◎概要
@@ -155,7 +155,7 @@ vcvtpd2dq xmm19, [eax+32]{1to4}         --> vcvtpd2dq(xmm19, yword_b [eax+32]); 
 
 vfpclassps k5{k3}, zword [rax+64], 5    --> vfpclassps(k5|k3, zword [rax+64], 5); // specify m512
 vfpclasspd k5{k3}, [rax+64]{1to2}, 5    --> vfpclasspd(k5|k3, xword_b [rax+64], 5); // broadcast 64-bit to 128-bit
-vfpclassps k5{k3}, [rax+64]{1to4}, 5    --> vfpclassps(k5|k3, xword_b [rax+64], 5); // broadcast 32-bit to 128-bit
+vfpclassps k5{k3}, [rax+64]{1to4}, 5    --> vfpclassps(k5|k3, xword_b [rax+64], 5); // broadcast 64-bit to 256-bit
 
 
 注意
@@ -245,8 +245,8 @@ void func2()
 
 更にラベルの割り当てを行うassignL(dstLabel, srcLabel)という命令も追加されました。
 
-      Label label1, label2;
-    L(label1);
+      Label label2;
+    Label label1 = L(); // Label label1; L(label1);と同じ意味
       ...
       jmp(label2);
       ...
@@ -309,6 +309,41 @@ bool CodeArray::protect(const void *addr, size_t size, bool canExec);
 */
 uint8 *CodeArray::getAlignedAddress(uint8 *addr, size_t alignedSize = ALIGN_SIZE);
 
+・read/execモード
+デフォルトのCodeGeneratorはコンストラクト時にJIT用の領域をread/write/execモードに設定して利用します。
+コード生成時はread/writeでコード実行時にはread/execにしたい場合、次のようにしてください。
+
+struct Code : Xbyak::CodeGenerator {
+    Code()
+        : Xbyak::CodeGenerator(4096, Xbyak::DontUseProtect) // JIT領域をread/writeのままコード生成
+    {
+        mov(eax, 123);
+        ret();
+    }
+};
+
+Code c;
+c.setProtectModeRE(); // read/execモードに変更
+// JIT領域を実行
+
+AutoGrowの場合はreadyの代わりにreadyRE()を読んでください。
+
+struct Code : Xbyak::CodeGenerator {
+    Code()
+        : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow) // JIT領域をread/writeのままコード生成
+    {
+        mov(eax, 123);
+        ret();
+    }
+};
+
+Code c;
+c.readyRE(); // read/exeモードに変更
+// JIT領域を実行
+
+setProtectModeRW()を呼ぶと領域が元のread/execモードに戻ります。
+
+
 その他詳細は各種サンプルを参照してください。
 -----------------------------------------------------------------------------
 ◎マクロ
@@ -335,14 +370,34 @@ http://opensource.org/licenses/BSD-3-Clause
 sample/{echo,hello}.bfは http://www.kmonos.net/alang/etc/brainfuck.php から
 いただきました。
 
-test/cybozu/以下のファイルはcybozulib(https://github.com/herumi/cybozulib/)
-の一部を使っています。cybozulibはBSD-3-Clauseライセンスです。
-cybozulibは単体テストでのみ利用されていて、xbyak/ディレクトリ以下のヘッダ
-ファイルはcybozulibとは独立に利用できます。
-
 -----------------------------------------------------------------------------
 ◎履歴
 
+2019/05/27 support vp2intersectd, vp2intersectq (not tested)
+2019/05/26 ver 5.80 support vcvtne2ps2bf16, vcvtneps2bf16, vdpbf16ps
+2019/04/27 ver 5.79 vcmppd/vcmppsのptr_b対応忘れ(thanks to jkopinsky)
+2019/04/15 ver 5.78 Reg::changeBit()のリファクタリング(thanks to MerryMage)
+2019/03/06 ver 5.77 LLCキャッシュを共有数CPU数の修整(by densamoilov)
+2019/01/17 ver 5.76 Cpu::getNumCores()追加(by shelleygoel)
+2018/10/31 ver 5.751 互換性のためにXbyak::CastToの復元
+2018/10/29 ver 5.75 LabelManagerのデストラクタでLabelから参照を切り離す
+2018/10/21 ver 5.74 RegRip +/intの形をサポート Xbyak::CastToを削除
+2018/10/15 util::StackFrameでmovの代わりにpush/popを使う
+2018/09/19 ver 5.73 vpslld, vpslldq, vpsllwなどの(reg, mem, imm8)に対するevexエンコーディング修整
+2018/09/19 ver 5.72 fix the encoding of vinsertps for disp8N(Thanks to petercaday)
+2018/08/27 ver 5.71 新しいlabelインスタンスを返すL()を追加
+2018/08/27 ver 5.70 read/exec設定のためのsetProtectMode()とDontUseProtectの追加
+2018/08/24 ver 5.68 indexが16以上のVSIBエンコーディングのバグ修正(thanks to petercaday)
+2018/08/14 ver 5.67 Addressクラス内のmutableを削除 ; fix setCacheHierarchy for cloud vm
+2018/07/26 ver 5.661 mingw64対応
+2018/07/24 ver 5.66 protect()のmodeにCodeArray::PROTECT_REを追加
+2018/06/26 ver 5.65 fix push(qword [mem])
+2018/03/07 ver 5.64 Cpu()の中でzero divisionが出ることがあるのを修正
+2018/02/14 ver 5.63 Cpu::setCacheHierarchy()の修正とclang<3.9のためのEvexModifierZero修正(thanks to mgouicem)
+2018/02/13 ver 5.62 Cpu::setCacheHierarchy() by mgouicem and rsdubtso
+2018/02/07 ver 5.61 vmov*がmem{k}{z}形式対応(忘れてた)
+2018/01/24 ver 5.601 xword, ywordなどをXbyak::util名前空間に追加
+2018/01/05 ver 5.60 Ice lake系命令対応(319433-030.pdf)
 2017/08/22 ver 5.53 mpxエンコーディングバグ修正, bnd()プレフィクス追加
 2017/08/18 ver 5.52 align修正(thanks to MerryMage)
 2017/08/17 ver 5.51 multi-byte nop追加 align()はそれを使用する(thanks to inolen)
@@ -468,7 +523,3 @@ cybozulibは単体テストでのみ利用されていて、xbyak/ディレク�
 ◎著作権者
 
 光成滋生(MITSUNARI Shigeo, herumi@nifty.com)
-
----
-$Revision: 1.56 $
-$Date: 2010/04/16 11:58:22 $

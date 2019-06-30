@@ -61,15 +61,25 @@ void putCPUinfo()
 		{ Cpu::tMOVBE, "movbe" },
 		{ Cpu::tAVX512F, "avx512f" },
 		{ Cpu::tAVX512DQ, "avx512dq" },
-		{ Cpu::tAVX512IFMA, "avx512ifma" },
+		{ Cpu::tAVX512IFMA, "avx512_ifma" },
 		{ Cpu::tAVX512PF, "avx512pf" },
 		{ Cpu::tAVX512ER, "avx512er" },
 		{ Cpu::tAVX512CD, "avx512cd" },
 		{ Cpu::tAVX512BW, "avx512bw" },
 		{ Cpu::tAVX512VL, "avx512vl" },
-		{ Cpu::tAVX512VBMI, "avx512vbmi" },
+		{ Cpu::tAVX512VBMI, "avx512_vbmi" },
 		{ Cpu::tAVX512_4VNNIW, "avx512_4vnniw" },
 		{ Cpu::tAVX512_4FMAPS, "avx512_4fmaps" },
+
+		{ Cpu::tAVX512_VBMI2, "avx512_vbmi2" },
+		{ Cpu::tGFNI, "gfni" },
+		{ Cpu::tVAES, "vaes" },
+		{ Cpu::tVPCLMULQDQ, "vpclmulqdq" },
+		{ Cpu::tAVX512_VNNI, "avx512_vnni" },
+		{ Cpu::tAVX512_BITALG, "avx512_bitalg" },
+		{ Cpu::tAVX512_VPOPCNTDQ, "avx512_vpopcntdq" },
+		{ Cpu::tAVX512_BF16, "avx512_bf16" },
+		{ Cpu::tAVX512_VP2INTERSECT, "avx512_vp2intersect" },
 	};
 	for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
 		if (cpu.has(tbl[i].type)) printf(" %s", tbl[i].str);
@@ -96,6 +106,12 @@ void putCPUinfo()
 		Core i7-3930K        6           2D
 	*/
 	cpu.putFamily();
+	if (!cpu.has(Cpu::tINTEL)) return;
+	for (unsigned int i = 0; i < cpu.getDataCacheLevels(); i++) {
+		printf("cache level=%u data cache size=%u cores sharing data cache=%u\n", i, cpu.getDataCacheSize(i), cpu.getCoresSharingDataCache(i));
+	}
+	printf("SmtLevel =%u\n", cpu.getNumCores(Xbyak::util::SmtLevel));
+	printf("CoreLevel=%u\n", cpu.getNumCores(Xbyak::util::CoreLevel));
 }
 
 int main()
